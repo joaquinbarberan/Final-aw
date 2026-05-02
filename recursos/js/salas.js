@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const cargarSalas = async () => {
         try {
-            const response = await fetch('./recursos/js/datos_salas.json');
+            const response = await fetch('/salas');
 
             if (!response.ok) {
                 throw new Error(`Error HTTP: ${response.status}`);
