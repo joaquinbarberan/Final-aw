@@ -2,10 +2,10 @@
   "name": "final-aw",
   "version": "1.0.0",
   "description": "el proyecto estara aqui",
-  "main": "index.js",
+  "main": "src/app.mjs",
   "scripts": {
-    "dev": "node --watch app.mjs",
-    "start": "node app.mjs"
+    "dev": "node --watch src/app.mjs",
+    "start": "node src/app.mjs"
   },
   "repository": {
     "type": "git",
@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/joaquinbarberan/Final-aw/issues"
   },
-  "homepage": "https://github.com/joaquinbarberan/Final-aw#readme"
+  "homepage": "https://github.com/joaquinbarberan/Final-aw#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
 }
