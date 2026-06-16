@@ -1,23 +1,22 @@
-import conexion from '../config/db.mjs';
+import conexion from '../conexion.bd.mjs';
 
-// El Modelo se encarga exclusivamente de interactuar con la base de datos (PostgreSQL).
-// No sabe nada sobre peticiones HTTP o respuestas web, solo de tablas, filas y SQL.
+// El Modelo se encarga exclusivamente de las consultas SQL a la base de datos (PostgreSQL).
 const salaModelo = {
-  // 1. Obtener todas las salas de la base de datos
+  // 1. Obtener todas las salas
   async obtenerTodas() {
     const consulta = 'SELECT * FROM salas ORDER BY id ASC';
     const resultado = await conexion.query(consulta);
-    return resultado.rows; // Devuelve un array de objetos con las salas
+    return resultado.rows;
   },
 
-  // 2. Obtener una sala por su identificador único (ID)
+  // 2. Obtener una sala por ID
   async obtenerPorId(id) {
     const consulta = 'SELECT * FROM salas WHERE id = $1';
     const resultado = await conexion.query(consulta, [id]);
-    return resultado.rows[0]; // Devuelve la sala encontrada o undefined si no existe
+    return resultado.rows[0];
   },
 
-  // 3. Crear una nueva sala en la base de datos (Alta)
+  // 3. Crear una nueva sala (Alta)
   async crear(datos) {
     const consulta = `
       INSERT INTO salas (nombre, capacidad_ninos, capacidad_adultos, precio, descripcion, imagen, alt_imagen)
@@ -34,10 +33,10 @@ const salaModelo = {
       datos.alt_imagen || ''
     ];
     const resultado = await conexion.query(consulta, parametros);
-    return resultado.rows[0]; // Devuelve la fila recién creada, incluyendo su ID generado
+    return resultado.rows[0];
   },
 
-  // 4. Actualizar los datos de una sala existente (Modificación)
+  // 4. Actualizar una sala (Modificación)
   async actualizar(id, datos) {
     const consulta = `
       UPDATE salas
@@ -62,14 +61,14 @@ const salaModelo = {
       id
     ];
     const resultado = await conexion.query(consulta, parametros);
-    return resultado.rows[0]; // Devuelve la sala modificada, o undefined si no se encontró el ID
+    return resultado.rows[0];
   },
 
-  // 5. Eliminar una sala de la base de datos (Baja)
+  // 5. Eliminar una sala (Baja)
   async eliminar(id) {
     const consulta = 'DELETE FROM salas WHERE id = $1 RETURNING *';
     const resultado = await conexion.query(consulta, [id]);
-    return resultado.rows[0]; // Devuelve la sala eliminada para saber si efectivamente existía
+    return resultado.rows[0];
   }
 };
 

@@ -122,10 +122,17 @@
           <label for="descripcion">Descripción</label>
           <textarea id="descripcion" name="descripcion" rows="3" placeholder="Describe la temática, colores y atracciones..." required></textarea>
 
+          <!-- Campo oculto para guardar la ruta de la imagen existente cuando se edita -->
+          <input type="hidden" id="imagen_existente" name="imagen_existente">
+
           <div class="form-fila">
             <div class="form-grupo-50">
-              <label for="imagen">Ruta o URL de Imagen</label>
-              <input type="text" id="imagen" name="imagen" placeholder="Ej: ./recursos/imagenes/sala-azul.jpg" required>
+              <label for="imagen">Subir Foto de la Sala</label>
+              <input type="file" id="imagen" name="imagen" accept="image/*">
+              <div id="preview-imagen-contenedor" style="margin-top: 5px; display: none;">
+                <span style="font-size: 0.8em; color: #666;">Imagen actual: </span>
+                <span id="preview-imagen-nombre" style="font-size: 0.8em; font-weight: bold; color: #333; word-break: break-all;"></span>
+              </div>
             </div>
             <div class="form-grupo-50">
               <label for="alt_imagen">Texto Alternativo (Alt)</label>

@@ -35,8 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Obtiene todas las salas del servidor y actualiza la tabla y estadísticas
   async function cargarSalas() {
     try {
-      // Hacemos una petición GET a nuestra API CRUD
-      const respuesta = await fetch('/api/salas');
+      // Hacemos una petición GET a nuestra API CRUD (versión 1)
+      const respuesta = await fetch('/api/v1/salas');
       
       if (!respuesta.ok) {
         throw new Error('Error al obtener los datos del servidor.');
@@ -135,6 +135,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function abrirModalParaCrear() {
     formulario.reset(); // Limpiamos campos anteriores
     campoId.value = ''; // ID vacío para saber que es un ALTA (POST)
+    
+    // Reseteamos el campo de imagen existente y su vista previa
+    document.getElementById('imagen_existente').value = '';
+    document.getElementById('preview-imagen-contenedor').style.display = 'none';
+    
     modalTitulo.textContent = 'Agregar Nueva Sala';
     
     // Abrimos el modal agregando la clase CSS que controla la opacidad
@@ -144,8 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Muestra el modal y carga los datos actuales de una sala para EDITARLA
   async function abrirModalParaEditar(id) {
     try {
-      // Hacemos una petición GET a la API CRUD para traer los detalles de esa sala específica
-      const respuesta = await fetch(`/api/salas/${id}`);
+      // Hacemos una petición GET a la API CRUD (v1) para traer los detalles de esa sala específica
+      const respuesta = await fetch(`/api/v1/salas/${id}`);
       
       if (!respuesta.ok) {
         throw new Error('No se pudo obtener la información de la sala.');
@@ -160,8 +165,22 @@ document.addEventListener('DOMContentLoaded', () => {
       campoCapAdultos.value = sala.capacidad_adultos;
       campoPrecio.value = sala.precio;
       campoDescripcion.value = sala.descripcion;
-      campoImagen.value = sala.imagen;
       campoAltImagen.value = sala.alt_imagen;
+
+      // Almacenamos la ruta de la imagen actual en el campo oculto
+      document.getElementById('imagen_existente').value = sala.imagen;
+
+      // Mostramos una vista previa del nombre de la imagen actual
+      const previewContenedor = document.getElementById('preview-imagen-contenedor');
+      const previewNombre = document.getElementById('preview-imagen-nombre');
+      
+      if (sala.imagen) {
+        previewContenedor.style.display = 'block';
+        const nombreArchivo = sala.imagen.substring(sala.imagen.lastIndexOf('/') + 1);
+        previewNombre.textContent = nombreArchivo;
+      } else {
+        previewContenedor.style.display = 'none';
+      }
 
       modalTitulo.textContent = 'Editar Sala';
       
@@ -176,41 +195,32 @@ document.addEventListener('DOMContentLoaded', () => {
   function cerrarModalFormulario() {
     modal.classList.remove('mostrar');
     formulario.reset();
+    document.getElementById('preview-imagen-contenedor').style.display = 'none';
   }
 
-  // Maneja el guardado del formulario (Creación o Actualización)
+  // Maneja el guardado del formulario (Creación o Actualización con Multer)
   async function guardarSala(evento) {
     evento.preventDefault(); // Evitamos que la página se recargue
 
-    // Construimos el objeto con los datos del formulario
-    const datosFormulario = {
-      nombre: campoNombre.value.trim(),
-      capacidad_ninos: parseInt(campoCapNinos.value),
-      capacidad_adultos: parseInt(campoCapAdultos.value),
-      precio: parseFloat(campoPrecio.value),
-      descripcion: campoDescripcion.value.trim(),
-      imagen: campoImagen.value.trim(),
-      alt_imagen: campoAltImagen.value.trim()
-    };
+    // En lugar de JSON, usamos FormData para permitir la subida del archivo binario
+    const datosFormulario = new FormData(formulario);
 
     const id = campoId.value;
-    let url = '/api/salas';
+    let url = '/api/v1/salas';
     let metodo = 'POST'; // Por defecto es ALTA
 
     // Si el ID tiene valor, significa que estamos EDITANDO (PUT)
     if (id) {
-      url = `/api/salas/${id}`;
+      url = `/api/v1/salas/${id}`;
       metodo = 'PUT';
     }
 
     try {
-      // Enviamos la petición AJAX al backend Express
+      // Enviamos la petición con FormData. El navegador establece automáticamente
+      // el Content-Type multipart/form-data con el boundary correcto.
       const respuesta = await fetch(url, {
         method: metodo,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(datosFormulario)
+        body: datosFormulario
       });
 
       if (!respuesta.ok) {
@@ -234,8 +244,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!confirmar) return; // Si cancela, no hacemos nada
 
     try {
-      // Enviamos petición DELETE al servidor Express
-      const respuesta = await fetch(`/api/salas/${id}`, {
+      // Enviamos petición DELETE al servidor Express (v1)
+      const respuesta = await fetch(`/api/v1/salas/${id}`, {
         method: 'DELETE'
       });
 
