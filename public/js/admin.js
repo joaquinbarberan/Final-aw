@@ -1,5 +1,31 @@
 // Esperamos a que la página HTML se cargue por completo
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+
+  // --- 0. VERIFICACIÓN DE SESIÓN ---
+  // Antes de mostrar el panel, comprobamos si el usuario tiene un token válido.
+  // Si no está autenticado, lo redirigimos al login.
+  try {
+    const respuestaAuth = await fetch('/api/v1/usuarios/verificar', {
+      credentials: 'include'
+    });
+
+    if (!respuestaAuth.ok) {
+      // No hay sesión válida: redirigimos al login
+      window.location.href = './login.html';
+      return;
+    }
+
+    // Mostramos el nombre del usuario logueado en el encabezado
+    const datosAuth = await respuestaAuth.json();
+    const bienvenida = document.getElementById('bienvenida-usuario');
+    if (bienvenida) {
+      bienvenida.textContent = `Hola, ${datosAuth.usuario.nombre_usuario}`;
+    }
+
+  } catch (error) {
+    window.location.href = './login.html';
+    return;
+  }
 
   // --- 1. SELECCIÓN DE ELEMENTOS DEL DOM (HTML) ---
   const tablaCuerpo = document.getElementById('cuerpo-tabla-salas');
@@ -11,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const botonNuevaSala = document.getElementById('btn-nueva-sala');
   const botonCerrarModal = document.getElementById('btn-cerrar-modal');
   const botonCancelar = document.getElementById('btn-cancelar');
+  const botonCerrarSesion = document.getElementById('btn-cerrar-sesion');
 
   // Campos del formulario
   const campoId = document.getElementById('sala-id');
@@ -36,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function cargarSalas() {
     try {
       // Hacemos una petición GET a nuestra API CRUD (versión 1)
-      const respuesta = await fetch('/api/v1/salas');
+      const respuesta = await fetch('/api/v1/salas', { credentials: 'include' });
       
       if (!respuesta.ok) {
         throw new Error('Error al obtener los datos del servidor.');
@@ -150,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function abrirModalParaEditar(id) {
     try {
       // Hacemos una petición GET a la API CRUD (v1) para traer los detalles de esa sala específica
-      const respuesta = await fetch(`/api/v1/salas/${id}`);
+      const respuesta = await fetch(`/api/v1/salas/${id}`, { credentials: 'include' });
       
       if (!respuesta.ok) {
         throw new Error('No se pudo obtener la información de la sala.');
@@ -220,7 +247,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // el Content-Type multipart/form-data con el boundary correcto.
       const respuesta = await fetch(url, {
         method: metodo,
-        body: datosFormulario
+        body: datosFormulario,
+        credentials: 'include'
       });
 
       if (!respuesta.ok) {
@@ -246,7 +274,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       // Enviamos petición DELETE al servidor Express (v1)
       const respuesta = await fetch(`/api/v1/salas/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       });
 
       if (!respuesta.ok) {
@@ -262,11 +291,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Cierra la sesión: borra la cookie del servidor y redirige al login
+  async function cerrarSesion() {
+    await fetch('/api/v1/usuarios/logout', {
+      method: 'POST',
+      credentials: 'include'
+    });
+    window.location.href = './login.html';
+  }
+
   // --- 3. ASOCIACIÓN DE EVENTOS DE BOTONES (LISTENERS) ---
   botonNuevaSala.addEventListener('click', abrirModalParaCrear);
   botonCerrarModal.addEventListener('click', cerrarModalFormulario);
   botonCancelar.addEventListener('click', cerrarModalFormulario);
   formulario.addEventListener('submit', guardarSala);
+  botonCerrarSesion.addEventListener('click', cerrarSesion);
 
   // Cerrar el modal haciendo clic fuera de la caja de contenido
   window.addEventListener('click', (evento) => {

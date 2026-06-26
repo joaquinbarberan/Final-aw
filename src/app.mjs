@@ -1,45 +1,57 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import 'dotenv/config'; // Carga las variables de entorno (.env)
+import 'dotenv/config';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
 
-// Importamos el enrutador y el controlador reestructurados (con nombres en español)
-import rutasCRUD from './routers/salas.routers.mjs';
+import rutasSalas from './routers/salas.routers.mjs';
+import rutasUsuarios from './routers/usuarios.routers.mjs';
 import salaControlador from './controladores/salas.controller.mjs';
+import verificarToken from './middleware/autenticacion.mjs';
 
 const app = express();
 const PUERTO = process.env.PORT || 3000;
 
-// Middleware para interpretar datos JSON en solicitudes
-app.use(express.json());
+// --- 1. CORS ---
+// En este proyecto el frontend y el backend corren en el mismo servidor Express,
+// por lo tanto CORS no es estrictamente necesario (mismo origen).
+// Lo habilitamos de forma restrictiva para estar preparados si en el futuro el
+// frontend se despliega en un dominio separado (ej: Vercel) y el backend en otro (ej: Render).
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true // Necesario para que las cookies httpOnly viajen entre dominios
+}));
 
-// Obtenemos las rutas absolutas para servir estáticos
+// --- 2. MIDDLEWARES GLOBALES ---
+app.use(express.json());
+app.use(cookieParser()); // Permite leer las cookies en req.cookies
+
+// Rutas absolutas para archivos estáticos
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rutaPublic = path.join(__dirname, '../public');
 
-// --- 1. ENRUTADO DE ARCHIVOS ESTÁTICOS ---
-// Servimos la carpeta "public" en la raíz del servidor (http://localhost:3000/)
 app.use(express.static(rutaPublic));
-
-// Mapeo virtual: Solicitudes a "/recursos" cargan de "public".
-// Esto resuelve las rutas de css, js e imágenes utilizadas en las plantillas HTML.
 app.use('/recursos', express.static(rutaPublic));
 
 
-// --- 2. ENRUTADO DE LAS APIS (MVC) ---
+// --- 3. RUTAS DE AUTENTICACIÓN (públicas) ---
+app.use('/api/v1/usuarios', rutasUsuarios);
 
-// Montamos la API CRUD bajo la VERSIÓN 1 (requerido por el docente)
-app.use('/api/v1/salas', rutasCRUD);
 
-// API REST de solo lectura para la Web pública (Punto 3.2.2 de la consigna)
-// Mantenemos la ruta "/salas" que ya está siendo consumida por "public/js/salas.js"
+// --- 4. RUTAS CRUD DE SALAS (protegidas con JWT) ---
+// verificarToken actúa como "portero": si no hay token válido, rechaza la petición
+app.use('/api/v1/salas', verificarToken, rutasSalas);
+
+
+// --- 5. API PÚBLICA DE SOLO LECTURA (sin protección, para la web del cliente) ---
 app.get('/salas', salaControlador.listarSalas);
 app.get('/salas/:id', salaControlador.obtenerSala);
 
 
-// --- 3. INICIO DEL SERVIDOR ---
+// --- 6. INICIO DEL SERVIDOR ---
 app.listen(PUERTO, () => {
-  console.log(`🚀 Servidor corriendo en: http://localhost:${PUERTO}`);
-  console.log(`Presiona Ctrl+C para detenerlo`);
+  console.log(`Servidor corriendo en: http://localhost:${PUERTO}`);
+  console.log(`Panel de administración: http://localhost:${PUERTO}/login.html`);
 });

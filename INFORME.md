@@ -99,7 +99,131 @@ En el Parcial 2 se implementó la subida física de imágenes al servidor usando
 
 ---
 
-## 5. Bitácora de Prompts de Inteligencia Artificial (IA)
+## 5. Autenticación, Accesos y Seguridad (TP 4)
+
+### 5.1 Persistencia de Usuarios en Base de Datos
+
+Se creó una nueva tabla `usuarios` en PostgreSQL mediante el script `src/seed.usuarios.mjs`. El esquema es el siguiente:
+
+```sql
+CREATE TABLE IF NOT EXISTS usuarios (
+  id SERIAL PRIMARY KEY,
+  nombre_usuario VARCHAR(100) NOT NULL UNIQUE,
+  contrasena_hash VARCHAR(255) NOT NULL,
+  creado_en TIMESTAMP DEFAULT NOW()
+);
+```
+
+La columna `contrasena_hash` nunca almacena la contraseña en texto plano. Solo guarda el resultado del hashing. La capa de acceso a datos está en `src/modelos/usuarios.model.mjs`, siguiendo el mismo patrón MVC del proyecto.
+
+Para crear el usuario administrador inicial se ejecuta:
+```bash
+node src/seed.usuarios.mjs
+```
+Esto crea el usuario `admin` con contraseña `admin123` (hasheada con bcrypt).
+
+---
+
+### 5.2 Hashing de Contraseñas con bcrypt
+
+Se utiliza la librería **bcryptjs** para hashear las contraseñas antes de guardarlas en la base de datos. El proceso tiene dos momentos:
+
+**Al crear el usuario (seed):**
+```js
+const contrasenaHash = await bcrypt.hash('admin123', 10);
+// El "10" es el saltRounds: cuántas veces se aplica el algoritmo.
+// Más alto = más seguro, pero más lento. 10 es el valor recomendado.
+```
+
+**Al verificar el login:**
+```js
+const contrasenaCorrecta = await bcrypt.compare(contrasena, usuario.contrasena_hash);
+// bcrypt compara la contraseña ingresada con el hash guardado sin necesidad
+// de conocer la contraseña original (el proceso es irreversible).
+```
+
+Esto garantiza que aunque alguien acceda a la base de datos, **no podrá leer las contraseñas**.
+
+---
+
+### 5.3 Autenticación con JWT y Cookies httpOnly
+
+El flujo de autenticación funciona de la siguiente manera:
+
+```
+[Usuario ingresa usuario y contraseña en login.html]
+         ↓
+[POST /api/v1/usuarios/login]
+         ↓
+[Servidor verifica hash con bcrypt]
+         ↓
+[Servidor genera Token JWT firmado con JWT_SECRETO]
+         ↓
+[Token se guarda en cookie httpOnly (no accesible desde JS del navegador)]
+         ↓
+[Cada petición al CRUD envía la cookie automáticamente]
+         ↓
+[Middleware verificarToken valida la cookie antes de dar acceso]
+```
+
+**Archivos involucrados:**
+- `src/controladores/usuarios.controller.mjs` — lógica de login y logout
+- `src/middleware/autenticacion.mjs` — middleware que protege las rutas del CRUD
+- `src/routers/usuarios.routers.mjs` — rutas `/login`, `/logout`, `/verificar`
+
+**¿Por qué cookie httpOnly y no localStorage?**
+Las cookies con el flag `httpOnly` no pueden ser leídas ni modificadas por JavaScript del navegador. Esto protege el token contra ataques de tipo **XSS** (Cross-Site Scripting). El flag `sameSite: 'strict'` agrega protección adicional contra ataques **CSRF**.
+
+**Endpoints de autenticación:**
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/api/v1/usuarios/login` | Valida credenciales y setea cookie con JWT |
+| POST | `/api/v1/usuarios/logout` | Borra la cookie (cierra sesión) |
+| GET | `/api/v1/usuarios/verificar` | Confirma si la sesión está activa |
+
+**Rutas protegidas:**
+Todas las rutas de `/api/v1/salas` (CRUD) requieren pasar por el middleware `verificarToken`. Si la cookie no existe o el token es inválido, el servidor devuelve `401 Acceso Denegado`. La página `admin.html` también verifica la sesión al cargarse y redirige a `login.html` si no hay autenticación.
+
+---
+
+### 5.4 CORS (Cross-Origin Resource Sharing)
+
+**Justificación:** En este proyecto el frontend y el backend corren en el **mismo servidor Express** (mismo origen: `http://localhost:3000`). Por eso el navegador no bloquea las peticiones y CORS no es estrictamente necesario.
+
+Sin embargo, se configuró de forma preventiva pensando en el **despliegue en producción**, donde el frontend podría estar en un dominio diferente al backend (por ejemplo, frontend en Vercel y backend en Render). En ese caso, CORS sería obligatorio para que el navegador permita las peticiones entre dominios.
+
+La configuración utilizada es **restrictiva**: solo permite peticiones desde el origen definido en `FRONTEND_URL` (variable de entorno), no desde cualquier dominio.
+
+```js
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true // Necesario para que las cookies viajen entre dominios
+}));
+```
+
+---
+
+### 5.5 Variables de Entorno
+
+Todos los datos sensibles se almacenan en el archivo `.env`, que está excluido del repositorio mediante `.gitignore`. El archivo `.env.example` sirve como plantilla para configurar el proyecto sin exponer credenciales.
+
+| Variable | Descripción |
+|----------|-------------|
+| `PORT` | Puerto del servidor |
+| `DB_USER` | Usuario de PostgreSQL |
+| `DB_PASSWORD` | Contraseña de PostgreSQL |
+| `DB_HOST` | Host de la base de datos |
+| `DB_PORT` | Puerto de PostgreSQL |
+| `DB_DATABASE` | Nombre de la base de datos |
+| `JWT_SECRETO` | Clave secreta para firmar los tokens JWT |
+| `FRONTEND_URL` | URL del frontend (para configurar CORS) |
+
+**¿Por qué es importante `JWT_SECRETO`?** Esta clave se usa para firmar y verificar los tokens JWT. Si alguien la conoce, puede fabricar tokens falsos y saltarse la autenticación. Por eso nunca debe subirse al repositorio.
+
+---
+
+## 6. Bitácora de Prompts de Inteligencia Artificial (IA)
 
 Este proyecto se desarrolló asistido por IA. A continuación se presentan algunos de los prompts utilizados para guiar el proceso y resolver problemas de implementación:
 

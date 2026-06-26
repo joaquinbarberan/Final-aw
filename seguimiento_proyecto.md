@@ -20,6 +20,12 @@ A continuación se presenta la tabla de seguimiento del proyecto, indicando las 
 | **T08** | **[Parcial 2]** Versionado de la API REST del CRUD a `/api/v1/salas` en servidor (Express) y cliente (AJAX fetch). | Joaquín, Lisandro y Lucas + IA | 15/06/2026 | 15/06/2026 | **Completo** | *Pendiente push* |
 | **T09** | **[Parcial 2]** Implementación del almacenamiento de imágenes con Multer en las rutas de Alta y Modificación de salas. | Joaquín, Lisandro y Lucas + IA | 15/06/2026 | 15/06/2026 | **Completo** | *Pendiente push* |
 | **T10** | **[Parcial 2]** Creación de informes técnicos detallados, bitácora de prompts de IA y documentación final. | Joaquín, Lisandro y Lucas + IA | 15/06/2026 | 15/06/2026 | **Completo** | *Pendiente push* |
+| **T11** | **[TP4]** Creación de tabla `usuarios` en PostgreSQL y script de seed con usuario admin inicial. | Joaquín, Lisandro y Lucas + IA | 25/06/2026 | 25/06/2026 | **Completo** | *Pendiente push* |
+| **T12** | **[TP4]** Implementación de hashing de contraseñas con bcryptjs (saltRounds: 10). | Joaquín, Lisandro y Lucas + IA | 25/06/2026 | 25/06/2026 | **Completo** | *Pendiente push* |
+| **T13** | **[TP4]** Autenticación con JWT: login, logout, middleware de verificación, cookies httpOnly. | Joaquín, Lisandro y Lucas + IA | 25/06/2026 | 25/06/2026 | **Completo** | *Pendiente push* |
+| **T14** | **[TP4]** Configuración de CORS (justificado) y cookie-parser. Protección de rutas CRUD. | Joaquín, Lisandro y Lucas + IA | 25/06/2026 | 25/06/2026 | **Completo** | *Pendiente push* |
+| **T15** | **[TP4]** Creación de página `login.html` con formulario y redirección al panel de admin. | Joaquín, Lisandro y Lucas + IA | 25/06/2026 | 25/06/2026 | **Completo** | *Pendiente push* |
+| **T16** | **[TP4]** Actualización de `.env`, `.env.example` con `JWT_SECRETO` y `FRONTEND_URL`. Informe TP4. | Joaquín, Lisandro y Lucas + IA | 25/06/2026 | 25/06/2026 | **Completo** | *Pendiente push* |
 
 ---
 
