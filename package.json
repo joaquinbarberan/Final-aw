@@ -21,8 +21,8 @@
   },
   "homepage": "https://github.com/joaquinbarberan/Final-aw#readme",
   "dependencies": {
+    "@vercel/blob": "^2.8.2",
     "bcryptjs": "^3.0.3",
-    "cloudinary": "^2.11.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",

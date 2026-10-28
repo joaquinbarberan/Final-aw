@@ -1,7 +1,7 @@
 import salaModelo from '../modelos/salas.model.mjs';
-import { subirImagen } from '../cloudinary.mjs';
+import { subirImagen } from '../storage.mjs';
 
-const IMAGEN_DEFAULT = 'https://res.cloudinary.com/diverty-park/image/upload/v1/diverty-park/payasio.png';
+const IMAGEN_DEFAULT = 'https://placehold.co/600x400?text=Diverty+Park';
 
 const salaControlador = {
 
@@ -39,7 +39,7 @@ const salaControlador = {
       // Si se subió un archivo, lo enviamos a Cloudinary; si no, usamos la imagen por defecto
       let urlImagen = IMAGEN_DEFAULT;
       if (peticion.file) {
-        urlImagen = await subirImagen(peticion.file.buffer);
+        urlImagen = await subirImagen(peticion.file.buffer, peticion.file.originalname);
       }
 
       const datosSala = {
@@ -73,7 +73,7 @@ const salaControlador = {
       // Si se subió un archivo nuevo lo subimos a Cloudinary; si no, mantenemos la imagen existente
       let urlImagen = cuerpo.imagen_existente || IMAGEN_DEFAULT;
       if (peticion.file) {
-        urlImagen = await subirImagen(peticion.file.buffer);
+        urlImagen = await subirImagen(peticion.file.buffer, peticion.file.originalname);
       }
 
       const datosSala = {
