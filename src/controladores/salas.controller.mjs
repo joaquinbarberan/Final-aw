@@ -1,8 +1,10 @@
 import salaModelo from '../modelos/salas.model.mjs';
+import { subirImagen } from '../cloudinary.mjs';
 
-// El Controlador recibe las peticiones, procesa los datos (incluyendo la subida de imágenes con Multer)
-// e interactúa con el Modelo para guardar o recuperar información de la DB.
+const IMAGEN_DEFAULT = 'https://res.cloudinary.com/diverty-park/image/upload/v1/diverty-park/payasio.png';
+
 const salaControlador = {
+
   // 1. Obtener todas las salas (GET /api/v1/salas)
   async listarSalas(peticion, respuesta) {
     try {
@@ -17,47 +19,37 @@ const salaControlador = {
   // 2. Obtener una sala por ID (GET /api/v1/salas/:id)
   async obtenerSala(peticion, respuesta) {
     try {
-      const id = peticion.params.id;
-      const sala = await salaModelo.obtenerPorId(id);
-
-      if (!sala) {
-        return respuesta.status(404).json({ error: 'La sala solicitada no existe.' });
-      }
-
+      const sala = await salaModelo.obtenerPorId(peticion.params.id);
+      if (!sala) return respuesta.status(404).json({ error: 'La sala solicitada no existe.' });
       respuesta.json(sala);
     } catch (error) {
-      console.error('Error al obtener sala por ID:', error);
-      respuesta.status(500).json({ error: 'Hubo un problema al obtener los datos de la sala.' });
+      console.error('Error al obtener sala:', error);
+      respuesta.status(500).json({ error: 'Hubo un problema al obtener la sala.' });
     }
   },
 
-  // 3. Crear una nueva sala (POST /api/v1/salas - ALTA con subida de archivo Multer)
+  // 3. Crear una sala (POST /api/v1/salas)
   async crearSala(peticion, respuesta) {
     try {
       const cuerpo = peticion.body;
-      const archivo = peticion.file;
-
-      // Validación básica
       if (!cuerpo.nombre || cuerpo.nombre.trim() === '') {
         return respuesta.status(400).json({ error: 'El nombre de la sala es obligatorio.' });
       }
 
-      // Procesamos el archivo subido por Multer si existe
-      let rutaImagen = './recursos/imagenes/payasio.png'; // Imagen por defecto si no suben ninguna
-      if (archivo) {
-        // Guardamos la ruta virtual que utiliza el frontend para mostrarla
-        rutaImagen = `./recursos/imagenes/${archivo.filename}`;
+      // Si se subió un archivo, lo enviamos a Cloudinary; si no, usamos la imagen por defecto
+      let urlImagen = IMAGEN_DEFAULT;
+      if (peticion.file) {
+        urlImagen = await subirImagen(peticion.file.buffer);
       }
 
-      // Convertimos los campos que vienen del formulario (en form-data todo viene como texto)
       const datosSala = {
-        nombre: cuerpo.nombre.trim(),
-        capacidad_ninos: parseInt(cuerpo.capacidad_ninos) || 0,
+        nombre:            cuerpo.nombre.trim(),
+        capacidad_ninos:   parseInt(cuerpo.capacidad_ninos) || 0,
         capacidad_adultos: parseInt(cuerpo.capacidad_adultos) || 0,
-        precio: parseFloat(cuerpo.precio) || 0.00,
-        descripcion: cuerpo.descripcion || '',
-        imagen: rutaImagen,
-        alt_imagen: cuerpo.alt_imagen || cuerpo.nombre
+        precio:            parseFloat(cuerpo.precio) || 0.00,
+        descripcion:       cuerpo.descripcion || '',
+        imagen:            urlImagen,
+        alt_imagen:        cuerpo.alt_imagen || cuerpo.nombre
       };
 
       const nuevaSala = await salaModelo.crear(datosSala);
@@ -68,39 +60,34 @@ const salaControlador = {
     }
   },
 
-  // 4. Actualizar una sala (PUT /api/v1/salas/:id - MODIFICACIÓN con Multer opcional)
+  // 4. Actualizar una sala (PUT /api/v1/salas/:id)
   async actualizarSala(peticion, respuesta) {
     try {
       const id = peticion.params.id;
       const cuerpo = peticion.body;
-      const archivo = peticion.file;
 
       if (!cuerpo.nombre || cuerpo.nombre.trim() === '') {
         return respuesta.status(400).json({ error: 'El nombre de la sala es obligatorio.' });
       }
 
-      // Si el cliente subió un nuevo archivo, usamos ese.
-      // De lo contrario, mantenemos la imagen existente que envía el formulario.
-      let rutaImagen = cuerpo.imagen_existente;
-      if (archivo) {
-        rutaImagen = `./recursos/imagenes/${archivo.filename}`;
+      // Si se subió un archivo nuevo lo subimos a Cloudinary; si no, mantenemos la imagen existente
+      let urlImagen = cuerpo.imagen_existente || IMAGEN_DEFAULT;
+      if (peticion.file) {
+        urlImagen = await subirImagen(peticion.file.buffer);
       }
 
       const datosSala = {
-        nombre: cuerpo.nombre.trim(),
-        capacidad_ninos: parseInt(cuerpo.capacidad_ninos) || 0,
+        nombre:            cuerpo.nombre.trim(),
+        capacidad_ninos:   parseInt(cuerpo.capacidad_ninos) || 0,
         capacidad_adultos: parseInt(cuerpo.capacidad_adultos) || 0,
-        precio: parseFloat(cuerpo.precio) || 0.00,
-        descripcion: cuerpo.descripcion || '',
-        imagen: rutaImagen,
-        alt_imagen: cuerpo.alt_imagen || cuerpo.nombre
+        precio:            parseFloat(cuerpo.precio) || 0.00,
+        descripcion:       cuerpo.descripcion || '',
+        imagen:            urlImagen,
+        alt_imagen:        cuerpo.alt_imagen || cuerpo.nombre
       };
 
       const salaActualizada = await salaModelo.actualizar(id, datosSala);
-
-      if (!salaActualizada) {
-        return respuesta.status(404).json({ error: 'No se encontró la sala a actualizar.' });
-      }
+      if (!salaActualizada) return respuesta.status(404).json({ error: 'No se encontró la sala.' });
 
       respuesta.json(salaActualizada);
     } catch (error) {
@@ -109,16 +96,11 @@ const salaControlador = {
     }
   },
 
-  // 5. Eliminar una sala (DELETE /api/v1/salas/:id - BAJA)
+  // 5. Eliminar una sala (DELETE /api/v1/salas/:id)
   async eliminarSala(peticion, respuesta) {
     try {
-      const id = peticion.params.id;
-      const salaEliminada = await salaModelo.eliminar(id);
-
-      if (!salaEliminada) {
-        return respuesta.status(404).json({ error: 'No se encontró la sala a eliminar.' });
-      }
-
+      const salaEliminada = await salaModelo.eliminar(peticion.params.id);
+      if (!salaEliminada) return respuesta.status(404).json({ error: 'No se encontró la sala.' });
       respuesta.json({ mensaje: 'Sala eliminada correctamente', sala: salaEliminada });
     } catch (error) {
       console.error('Error al eliminar sala:', error);
